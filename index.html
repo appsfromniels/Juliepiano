@@ -68,7 +68,7 @@ h1 span{color:var(--accent)}
 .dock.mini .now,.dock.mini .kb{display:none}
 .dock.mini .minibar{display:flex}
 .now .info b{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-right:6px}
-.kb{position:relative;display:flex;height:150px;user-select:none;-webkit-user-select:none}
+.kb{position:relative;display:flex;height:clamp(96px,20vh,170px);user-select:none;-webkit-user-select:none}
 .key{flex:1;position:relative;background:var(--key-w);border:1px solid #9AA0BF;border-radius:0 0 10px 10px;margin-right:-1px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:8px;cursor:pointer;transition:transform .08s,background .15s}
 .key .lt{font-family:var(--display);font-weight:700;font-size:1.05rem;color:#1E2340}
 .key .strip{width:60%;height:5px;border-radius:3px;margin-top:4px}
@@ -82,7 +82,14 @@ h1 span{color:var(--accent)}
 @keyframes ok{50%{box-shadow:0 0 0 4px #3FA34D inset}}
 @keyframes no{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 @media (prefers-reduced-motion:reduce){.key{transition:none}.key.ok,.key.no{animation:none}}
-@media (max-height:640px){.kb{height:120px}}
+.lines{display:grid;grid-template-columns:1fr;column-gap:18px}
+/* liggend: breder beeld, muziek in twee kolommen, piano lager */
+@media (orientation:landscape) and (min-width:820px){
+  .inner{max-width:1280px}
+  .lines{grid-template-columns:1fr 1fr}
+  .kb{height:clamp(90px,19vh,150px)}
+}
+@media (orientation:landscape) and (min-width:1400px){ .lines{grid-template-columns:1fr 1fr 1fr} }
 @media (max-width:620px){.fsl{display:none}.top h1 .t{display:none}}
 </style>
 
@@ -218,7 +225,7 @@ const SIG_Y = {'F#': TOP, 'C#': TOP+15, 'Bb': TOP+20, 'Eb': TOP+5};
 function renderSheet(){
   const [num, den] = song.time, unitsPerBar = num * (8/den);
   const sig = song.keySig || [], pick = song.pickup || 0;
-  let html = `<h2>${song.title}</h2><p class="sub">${song.sub} · ${num}/${den}-maat</p>`;
+  let html = `<h2>${song.title}</h2><p class="sub">${song.sub} · ${num}/${den}-maat</p><div class="lines">`;
   const lowY = Math.max(BOT, ...notes.map(n => yOf(n.p)));
   const hasLyrics = song.lines.some(l => l.some(n => n[2]));
   const BADGE = Math.max(BOT + 30, lowY + 17), LYR = BADGE + 24, H = (hasLyrics ? LYR : BADGE + 4) + 10;
@@ -274,7 +281,7 @@ function renderSheet(){
     });
     html += s + `</svg>`;
   });
-  $('sheet').innerHTML = html;
+  $('sheet').innerHTML = html + '</div>';
 }
 $('sheet').addEventListener('click', e => { const g = e.target.closest('.n'); if (g){ cur = +g.dataset.i; update(); } });
 
