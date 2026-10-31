@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F3F5FA">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}
+@media (display-mode:fullscreen),(display-mode:standalone){#fs{display:none!important}}</style>
+<title>Julie's Piano</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&family=Noto+Music&display=swap">
+<style>
+/* Layout: songbook page on top (search + sheet), piano docked at the bottom like a real music stand above keys */
+:root{
+  --bg:#F3F5FA; --paper:#FFFFFF; --ink:#1E2340; --muted:#6A7090; --line:#2A3050; --rule:#DDE1EE;
+  --accent:#C8323A; --accent-ink:#fff; --cursor:#FFE9A8; --key-w:#FFFFFF; --key-b:#1E2340; --dock:#E6EAF4;
+  --c:#E5484D; --d:#F08A24; --e:#D9A400; --f:#3FA34D; --g:#1F9AC2; --a:#4A5BD6; --b:#9B4FD0;
+  --display:"Fredoka","Nunito",system-ui,sans-serif; --body:"Nunito",system-ui,sans-serif; --music:"Noto Music","Bravura","Segoe UI Symbol",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12152A; --paper:#1B1F3A; --ink:#ECEEF8; --muted:#9AA0BF; --line:#C9CEE6; --rule:#2C3155;
+  --accent:#F0646B; --accent-ink:#12152A; --cursor:#4A4320; --key-w:#F4F5FA; --key-b:#0B0D1C; --dock:#171A33; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12152A; --paper:#1B1F3A; --ink:#ECEEF8; --muted:#9AA0BF; --line:#C9CEE6; --rule:#2C3155;
+  --accent:#F0646B; --accent-ink:#12152A; --cursor:#4A4320; --key-w:#F4F5FA; --key-b:#0B0D1C; --dock:#171A33; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;display:flex;flex-direction:column}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{flex:1;overflow-y:auto;padding-block:14px 20px}
+.inner{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--display);font-weight:700;font-size:1.6rem;margin:0;letter-spacing:.2px}
+h1 span{color:var(--accent)}
+.top{display:flex;align-items:center;gap:10px}
+.top h1{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:44px;height:44px;flex:none}
+.fs{font:inherit;font-weight:800;font-size:.85rem;padding:8px 12px;border-radius:12px;border:2px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:6px}
+.fs:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;font:inherit;font-weight:700;padding:12px 14px;border-radius:14px;border:2px solid var(--rule);background:var(--paper);color:var(--ink)}
+.search input:focus{outline:none;border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-weight:800;font-size:.9rem;padding:8px 14px;border-radius:999px;border:2px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.msg{font-weight:700;color:var(--muted);margin:0}
+.sheet{background:var(--paper);border-radius:18px;padding:16px 12px 8px;box-shadow:0 1px 0 var(--rule),0 8px 24px -16px rgba(30,35,64,.35)}
+.sheet h2{font-family:var(--display);font-weight:600;font-size:1.4rem;margin:0 6px 2px;text-wrap:balance}
+.sheet .sub{margin:0 6px 8px;color:var(--muted);font-size:.85rem;font-weight:700}
+.sheet svg{display:block;width:100%;height:auto}
+.n{cursor:pointer}
+.cur-bg{fill:var(--cursor)}
+.dock{background:var(--dock);border-top:1px solid var(--rule);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px))}
+.dock .inner{gap:10px}
+.now{display:flex;align-items:center;gap:10px}
+.now button{font:inherit;font-weight:800;font-size:1.2rem;width:48px;height:44px;border-radius:12px;border:2px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer}
+.now button:focus-visible,.chip:focus-visible,.key:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.now .info{flex:1;text-align:center;font-weight:800;color:var(--muted);font-size:.9rem}
+.now .info b{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-right:6px}
+.kb{position:relative;display:flex;height:150px;user-select:none;-webkit-user-select:none}
+.key{flex:1;position:relative;background:var(--key-w);border:1px solid #9AA0BF;border-radius:0 0 10px 10px;margin-right:-1px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:8px;cursor:pointer;transition:transform .08s,background .15s}
+.key .lt{font-family:var(--display);font-weight:700;font-size:1.05rem;color:#1E2340}
+.key .strip{width:60%;height:5px;border-radius:3px;margin-top:4px}
+.key .mid{position:absolute;bottom:42px;font-size:.6rem;font-weight:800;color:#6A7090}
+.key.on{transform:translateY(2px)}
+.key.on .lt,.key.on .mid{color:#fff}
+.key.bk{position:absolute;top:0;height:60%;flex:none;margin:0;background:var(--key-b);border:1px solid var(--key-b);border-radius:0 0 6px 6px;z-index:2;padding-bottom:6px}
+.key.bk .lt{color:#fff;font-size:.75rem}
+.key.ok{animation:ok .35s}
+.key.no{animation:no .3s}
+@keyframes ok{50%{box-shadow:0 0 0 4px #3FA34D inset}}
+@keyframes no{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@media (prefers-reduced-motion:reduce){.key{transition:none}.key.ok,.key.no{animation:none}}
+@media (max-height:640px){.kb{height:120px}}
+</style>
+
+</head>
+<body>
+<main class="wrap">
+  <div class="inner">
+    <div class="top">
+      <h1>Julie's <span>Piano</span>
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="31" fill="var(--cursor)"/>
+          <path d="M12 60 C8 40 10 18 32 13 C54 18 56 40 52 60 Z" fill="#7A4A2A"/>
+          <ellipse cx="32" cy="35" rx="14" ry="15" fill="#F6D2B8"/>
+          <path d="M17 31 C18 18 30 14 38 18 C44 20 47 26 47 32 C42 26 36 25 31 24 C27 27 22 29 17 31 Z" fill="#7A4A2A"/>
+          <circle cx="26.5" cy="36" r="2.3" fill="#1E2340"/>
+          <circle cx="37.5" cy="36" r="2.3" fill="#1E2340"/>
+          <circle cx="27.3" cy="35.2" r=".8" fill="#fff"/>
+          <circle cx="38.3" cy="35.2" r=".8" fill="#fff"/>
+          <ellipse cx="22.5" cy="41.5" rx="3" ry="2" fill="#F4A0A0" opacity=".8"/>
+          <ellipse cx="41.5" cy="41.5" rx="3" ry="2" fill="#F4A0A0" opacity=".8"/>
+          <path d="M28 43 Q32 46.5 36 43" stroke="#C8323A" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <circle cx="45" cy="20" r="3.2" fill="#E5484D"/><circle cx="49.5" cy="18" r="3.2" fill="#E5484D"/><circle cx="47" cy="19.2" r="1.6" fill="#fff"/>
+        </svg>
+      </h1>
+      <button class="fs" id="fs" type="button" aria-label="Volledig scherm">⛶ <span id="fsl">Volledig scherm</span></button>
+    </div>
+    <form class="search" id="f">
+      <input id="q" type="search" placeholder="Typ een liedje…" autocomplete="off" aria-label="Zoek een liedje">
+    </form>
+    <div class="chips" id="list"></div>
+    <p class="msg" id="msg" hidden></p>
+    <section class="sheet" id="sheet" aria-live="polite"></section>
+  </div>
+</main>
+
+<div class="dock wrap">
+  <div class="inner">
+    <div class="now">
+      <button id="prev" aria-label="Vorige noot">◀</button>
+      <div class="info" id="info"></div>
+      <button id="next" aria-label="Volgende noot">▶</button>
+    </div>
+    <div class="kb" id="kb"></div>
+  </div>
+</div>
+
+<script>
+/* ---- Song library ----
+   Each line = one row of music. Note: [pitch, length in eighths, lyric, finger]. Rest: ['r', length].
+   keySig: sharps/flats that count for the whole song, e.g. ['F#'] or ['Bb']. pickup: length of the opening upbeat. */
+const SONGS = [
+  {
+    id: 'sinterklaas-kapoentje',
+    title: 'Sinterklaas kapoentje',
+    sub: 'Traditioneel · rechterhand · begint op G',
+    time: [3, 4],
+    lines: [
+      [['G4',4,'Sin',4],['G4',2,'ter',4],['A4',4,'klaas',5],['A4',2,'ka',5],['G4',6,'poen',4],['E4',6,'tje,',2]],
+      [['G4',4,'Gooi',4],['G4',2,'wat',4],['A4',4,'in',5],['A4',2,'mijn',5],['G4',6,'schoen',4],['E4',6,'tje,',2]],
+      [['F4',4,'Gooi',3],['F4',2,'wat',3],['F4',4,'in',3],['D4',2,'mijn',1],['F4',6,'laars',3],['F4',6,'je,',3]],
+      [['A4',4,'Dank',5],['G4',2,'je',4],['F4',4,'Sin',3],['E4',2,'ter',2],['D4',6,'klaas',1],['C4',6,'je!',2]]
+    ]
+  },
+  {
+    id: 'zie-ginds-komt-de-stoomboot',
+    title: 'Zie ginds komt de stoomboot',
+    sub: 'Jan Schenkman, 1850 · in G: elke F is een Fis (zwarte toets)',
+    time: [3, 4],
+    keySig: ['F#'],
+    pickup: 2,
+    lines: [
+      [['D4',2,'Zie',1],['G4',2,'ginds',3],['G4',2,'komt'],['B4',2,'de',5],['A4',2,'stoom'],['A4',2,'boot'],['C5',2,'uit'],['F#4',2,'Span'],['F#4',2,'je'],['A4',2,'weer'],['G4',4,'aan,']],
+      [['D4',2,'Hij'],['G4',2,'brengt'],['G4',2,'ons'],['B4',2,'Sint'],['A4',1,'Ni'],['A4',1,'co'],['A4',2,'laas,'],['C5',2,'ik'],['F#4',2,'zie'],['F#4',2,'hem'],['A4',2,'al'],['G4',4,'staan.']],
+      [['D5',2,'Hoe'],['A4',2,'hup'],['A4',2,'pelt'],['D5',2,'zijn'],['B4',2,'paard'],['B4',2,'je'],['D5',2,'het'],['C5',2,'dek'],['C5',2,'op'],['B4',2,'en'],['A4',4,'neer,']],
+      [['D4',2,'Hoe'],['G4',2,'waai'],['G4',1,'en'],['A4',1,''],['B4',1,'de'],['C5',1,''],['D5',2,'wim'],['B4',2,'pels'],['G4',2,'al'],['C5',2,'heen'],['A4',2,'en'],['F#4',2,'al'],['G4',4,'weer.'],['r',2]]
+    ]
+  },
+  {
+    id: 'dag-sinterklaasje',
+    title: 'Dag Sinterklaasje',
+    sub: 'Traditioneel · rechterhand · in F: elke B is een Bes (zwarte toets)',
+    time: [2, 4],
+    keySig: ['Bb'],
+    lines: [
+      [['C5',2,'',4],['A4',1.5,'',3],['G4',0.5,'',2],['F4',2,'',1],['C5',2,'',4],['D5',2,'',5],['Bb4',2,'',3],['C5',2,'',4],['A4',2,'',2]],
+      [['Bb4',2,'',3],['G4',2,'',1],['A4',2,'',3],['F4',2,'',1],['G4',2,'',2],['A4',2,'',3],['G4',4,'',2]],
+      [['C5',2,'',4],['A4',1.5,'',3],['G4',0.5,'',2],['F4',2,'',1],['C5',2,'',4],['D5',2,'',5],['Bb4',2,'',3],['C5',2,'',4],['A4',2,'',2]],
+      [['Bb4',2,'',3],['G4',2,'',1],['A4',2,'',3],['F4',2,'',1],['G4',2,'',2],['A4',2,'',3],['F4',4,'',1]]
+    ]
+  }
+];
+
+const NAMES = ['C','D','E','F','G','A','B'];
+const COL = {C:'--c',D:'--d',E:'--e',F:'--f',G:'--g',A:'--a',B:'--b'};
+const SEMI = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const parse = p => { const m = /^([A-G])(#|b)?(\d)$/.exec(p); return {l:m[1], acc:m[2]||'', o:+m[3]}; };
+const diat = p => { const n = parse(p); return n.o*7 + NAMES.indexOf(n.l); };
+const midi = p => { const n = parse(p); return 12*(n.o+1) + SEMI[n.l] + (n.acc==='#'?1:n.acc==='b'?-1:0); };
+const label = p => { const n = parse(p); return n.l + (n.acc==='#'?'is':n.acc==='b'?(n.l==='E'||n.l==='A'?'s':'es'):''); };
+const store = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
+
+let song = null, notes = [], cur = 0;
+const $ = id => document.getElementById(id);
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g,'').trim();
+
+function renderList(filter=''){
+  const f = norm(filter);
+  const hits = SONGS.filter(s => !f || norm(s.title).includes(f));
+  $('list').innerHTML = hits.map(s => `<button class="chip" data-id="${s.id}" aria-pressed="${song&&song.id===s.id}">${s.title}</button>`).join('');
+  const msg = $('msg');
+  if (!hits.length){ msg.hidden = false; msg.textContent = `"${filter}" staat nog niet in het boek. Vraag Claude om dit liedje toe te voegen.`; }
+  else msg.hidden = true;
+}
+$('list').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) openSong(b.dataset.id); });
+$('q').addEventListener('input', e => renderList(e.target.value));
+$('f').addEventListener('submit', e => { e.preventDefault(); const f = norm($('q').value); const s = SONGS.find(s => norm(s.title).includes(f)); if (s && f) openSong(s.id); });
+
+function openSong(id){
+  song = SONGS.find(s => s.id === id) || SONGS[0];
+  store.set('pianoboek-song', song.id);
+  notes = []; song.lines.forEach((ln,li) => ln.forEach((n,ni) => { if (n[0] !== 'r') notes.push({li,ni,p:n[0]}); }));
+  cur = 0;
+  renderList($('q').value); renderSheet(); renderKeys(); update();
+}
+
+/* ---- Sheet music drawn as SVG ---- */
+const W = 360, TOP = 34, GAP = 10, BOT = TOP + 4*GAP;           // staff lines; bottom line = E4
+const yOf = p => BOT - (diat(p) - diat('E4')) * GAP/2;
+const SIG_Y = {'F#': TOP, 'C#': TOP+15, 'Bb': TOP+20, 'Eb': TOP+5};
+
+function renderSheet(){
+  const [num, den] = song.time, unitsPerBar = num * (8/den);
+  const sig = song.keySig || [], pick = song.pickup || 0;
+  let html = `<h2>${song.title}</h2><p class="sub">${song.sub} · ${num}/${den}-maat</p>`;
+  const lowY = Math.max(BOT, ...notes.map(n => yOf(n.p)));
+  const hasLyrics = song.lines.some(l => l.some(n => n[2]));
+  const BADGE = Math.max(BOT + 30, lowY + 17), LYR = BADGE + 24, H = (hasLyrics ? LYR : BADGE + 4) + 10;
+  song.lines.forEach((line, li) => {
+    const first = li === 0, sigW = sig.length * 10;
+    const start = (first ? 70 : 46) + sigW, end = W - 6;
+    const total = line.reduce((s,n) => s + n[1], 0);
+    // spacing: longer notes get more room, but short notes never get squeezed
+    const items = []; const barsAt = []; let pos = 0, ws = 0;
+    line.forEach(n => {
+      items.push(ws); ws += 1 + n[1]*0.55; pos += n[1];
+      const fromPick = pos - pick;
+      if (Math.abs(pos - total) < 1e-6 || (fromPick > 1e-6 && Math.abs(fromPick % unitsPerBar) < 1e-6) || (pick && Math.abs(pos - pick) < 1e-6)) barsAt.push(ws);
+    });
+    const unit = (end - start) / ws;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Regel ${li+1}">`;
+    s += `<g class="curg"></g>`;
+    for (let i=0;i<5;i++) s += `<line x1="4" x2="${end}" y1="${TOP+i*GAP}" y2="${TOP+i*GAP}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text x="6" y="${BOT+10}" font-family="var(--music)" font-size="58" fill="var(--ink)">𝄞</text>`;
+    sig.forEach((k,i) => s += `<text x="${42+i*10}" y="${SIG_Y[k] + (k[1]==='#'?5:3)}" font-size="17" fill="var(--ink)" text-anchor="middle">${k[1]==='#'?'♯':'♭'}</text>`);
+    if (first){ const tx = 52 + sigW;
+      s += `<text x="${tx}" y="${TOP+19}" font-family="var(--display)" font-weight="700" font-size="21" fill="var(--ink)" text-anchor="middle">${num}</text><text x="${tx}" y="${TOP+39}" font-family="var(--display)" font-weight="700" font-size="21" fill="var(--ink)" text-anchor="middle">${den}</text>`; }
+    barsAt.forEach((w, bi) => { const last = bi === barsAt.length-1, x = start + w*unit - (last?0:unit*0.35), fin = last && li===song.lines.length-1;
+      s += `<line x1="${x}" x2="${x}" y1="${TOP}" y2="${BOT}" stroke="var(--line)" stroke-width="${fin?3:1}"/>`;
+      if (fin) s += `<line x1="${x-5}" x2="${x-5}" y1="${TOP}" y2="${BOT}" stroke="var(--line)" stroke-width="1"/>`; });
+    line.forEach((n, ni) => {
+      const [p, d, lyr, fing] = n, x = start + items[ni]*unit + Math.min(12, unit*0.75);
+      if (p === 'r'){
+        const g = d >= 4 ? `<rect x="${x-6}" y="${TOP+20-5}" width="12" height="5" fill="var(--ink)"/>` : `<text x="${x}" y="${TOP+29}" font-family="var(--music)" font-size="30" fill="var(--ink)" text-anchor="middle">𝄽</text>`;
+        s += g; if (d===3) s += `<circle cx="${x+10}" cy="${TOP+15}" r="2" fill="var(--ink)"/>`;
+        return;
+      }
+      const P = parse(p), y = yOf(p), col = `var(${COL[P.l]})`, idx = notes.findIndex(q => q.li===li && q.ni===ni);
+      const hollow = d >= 4, up = y > TOP + 2*GAP;
+      s += `<g class="n" data-i="${idx}">`;
+      s += `<rect x="${x-12}" y="${TOP-22}" width="24" height="${H-TOP+18}" fill="transparent"/>`;
+      for (let ly = BOT+GAP; ly <= y+0.1; ly += GAP) s += `<line x1="${x-10}" x2="${x+10}" y1="${ly}" y2="${ly}" stroke="var(--line)" stroke-width="1"/>`;
+      for (let ly = TOP-GAP; ly >= y-0.1; ly -= GAP) s += `<line x1="${x-10}" x2="${x+10}" y1="${ly}" y2="${ly}" stroke="var(--line)" stroke-width="1"/>`;
+      if (P.acc && !sig.includes(P.l + P.acc)) s += `<text x="${x-14}" y="${y+5}" font-size="15" fill="var(--ink)" text-anchor="middle">${P.acc==='#'?'♯':'♭'}</text>`;
+      s += `<ellipse cx="${x}" cy="${y}" rx="6.4" ry="4.6" transform="rotate(-20 ${x} ${y})" fill="${hollow?'var(--paper)':col}" stroke="${col}" stroke-width="${hollow?2.4:1}"/>`;
+      if (d < 8){
+        const sx = up ? x+5.6 : x-5.6, ey = up ? y-30 : y+30, dir = up ? 1 : -1;
+        s += `<line x1="${sx}" x2="${sx}" y1="${y}" y2="${ey}" stroke="var(--ink)" stroke-width="1.4"/>`;
+        const flags = d < 1 ? 2 : d < 2 ? 1 : 0;
+        for (let k=0;k<flags;k++){ const fy = ey + dir*k*7;
+          s += `<path d="M${sx} ${fy} q1 ${7*dir} 8 ${11*dir} q3 ${3*dir} 0 ${10*dir} q1 ${-6*dir} -8 ${-11*dir}z" fill="var(--ink)"/>`; }
+      }
+      if (d === 1.5 || d === 3 || d === 6){ const dy = (Math.round((BOT-y)/(GAP/2)) % 2 === 0) ? y-GAP/2 : y; s += `<circle cx="${x+11}" cy="${dy}" r="2" fill="var(--ink)"/>`; }
+      if (fing) s += `<text x="${x}" y="${Math.min(TOP-10, y-(up?36:12))}" font-family="var(--body)" font-weight="800" font-size="10.5" fill="var(--muted)" text-anchor="middle">${fing}</text>`;
+      s += `<circle cx="${x}" cy="${BADGE}" r="10" fill="${col}"/><text x="${x}" y="${BADGE+4}" font-family="var(--display)" font-weight="700" font-size="${label(p).length>1?9.5:12.5}" fill="#fff" text-anchor="middle">${label(p)}</text>`;
+      if (lyr) s += `<text x="${x}" y="${LYR}" font-family="var(--body)" font-weight="800" font-size="12" fill="var(--ink)" text-anchor="middle">${lyr}</text>`;
+      s += `</g>`;
+    });
+    html += s + `</svg>`;
+  });
+  $('sheet').innerHTML = html;
+}
+$('sheet').addEventListener('click', e => { const g = e.target.closest('.n'); if (g){ cur = +g.dataset.i; update(); } });
+
+/* ---- Keyboard ---- */
+function renderKeys(){
+  const ps = notes.map(n => n.p), lo = Math.min(...ps.map(diat)), hi = Math.max(...ps.map(diat));
+  let a = Math.floor(lo/7)*7, b = Math.max(hi + 1, a + 9);   // start on a C, show at least 10 white keys
+  if (b - a > 14) a = lo - 1;                                // keep it narrow on a phone
+  const kb = $('kb'); let h = '';
+  const whites = []; for (let d=a; d<=b; d++) whites.push(NAMES[d%7] + Math.floor(d/7));
+  whites.forEach(w => {
+    const L = w[0];
+    h += `<div class="key" role="button" tabindex="0" data-p="${w}" aria-label="${L}"><span class="mid">${w==='C4'?'midden-C':''}</span><span class="lt">${L}</span><span class="strip" style="background:var(${COL[L]})"></span></div>`;
+  });
+  const kw = 100/whites.length;
+  whites.forEach((w,i) => { if (i < whites.length-1 && !['E','B'].includes(w[0])){ const p = w[0] + '#' + w[1];
+    h += `<div class="key bk" role="button" tabindex="0" data-p="${p}" aria-label="${label(p)}" style="left:calc(${(i+1)*kw - kw*0.3}%);width:${kw*0.6}%"><span class="lt"></span></div>`; } });
+  kb.innerHTML = h;
+}
+function press(el){
+  const n = notes[cur]; if (!n) return;
+  const ok = midi(el.dataset.p) === midi(n.p);
+  el.classList.remove('ok','no'); void el.offsetWidth; el.classList.add(ok ? 'ok' : 'no');
+  if (ok && cur < notes.length-1){ cur++; update(); }
+}
+$('kb').addEventListener('click', e => { const k = e.target.closest('.key'); if (k) press(k); });
+$('kb').addEventListener('keydown', e => { const k = e.target.closest('.key'); if (k && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); press(k); } });
+
+function update(){
+  const n = notes[cur]; if (!n) return;
+  const C = `var(${COL[parse(n.p).l]})`;
+  document.querySelectorAll('.key').forEach(k => {
+    const on = midi(k.dataset.p) === midi(n.p), black = k.classList.contains('bk');
+    k.classList.toggle('on', on);
+    k.style.background = on ? C : '';
+    if (black) k.querySelector('.lt').textContent = on ? label(n.p) : '';
+  });
+  document.querySelectorAll('.curg').forEach(g => g.innerHTML = '');
+  const svg = $('sheet').querySelectorAll('svg')[n.li], g = svg && svg.querySelector(`.n[data-i="${cur}"]`);
+  if (g){ const x = +g.querySelector('ellipse').getAttribute('cx');
+    svg.querySelector('.curg').innerHTML = `<rect class="cur-bg" x="${x-13}" y="${TOP-20}" width="26" height="${svg.viewBox.baseVal.height - TOP + 16}" rx="8"/>`;
+    const r = svg.getBoundingClientRect(), m = document.querySelector('main').getBoundingClientRect();
+    if (r.top < m.top || r.bottom > m.bottom) svg.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  const nd = song.lines[n.li][n.ni], word = nd[2] || '', fing = nd[3] ? ` · vinger ${nd[3]}` : '';
+  $('info').innerHTML = `<b style="color:${C}">${label(n.p)}</b> ${word}${fing} · ${cur+1}/${notes.length}`;
+}
+$('prev').addEventListener('click', () => { if (cur > 0){ cur--; update(); } });
+$('next').addEventListener('click', () => { if (cur < notes.length-1){ cur++; update(); } });
+
+/* ---- Fullscreen ---- */
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+function fsLabel(){ $('fsl').textContent = fsEl() ? 'Sluiten' : 'Volledig scherm'; }
+$('fs').addEventListener('click', async () => {
+  try {
+    if (fsEl()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else { const r = document.documentElement; await (r.requestFullscreen || r.webkitRequestFullscreen).call(r); }
+  } catch(e) { $('fs').hidden = true; }
+  fsLabel();
+});
+document.addEventListener('fullscreenchange', fsLabel);
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) $('fs').hidden = true;
+
+openSong(store.get('pianoboek-song') || SONGS[0].id);
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
