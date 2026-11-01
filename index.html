@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}*,*::before,*::after{box-sizing:border-box}html{height:100%}body{margin:0;height:100%;overflow:hidden}[hidden]{display:none!important}
 @media (display-mode:fullscreen),(display-mode:standalone){#fs{display:none!important}}</style>
+<script>window.APP_BUILD=true</script>
 <title>Julie's Piano</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&family=Noto+Music&display=swap">
 <style>
@@ -45,6 +46,28 @@ h1 span{color:var(--accent)}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;white-space:nowrap;font:inherit;font-weight:800;font-size:.85rem;padding:5px 12px;border-radius:999px;border:2px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer}
+.cam{padding:6px 9px}
+.cam svg{display:block}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(18,21,42,.55);display:grid;place-items:center;padding:16px}
+.card{width:min(440px,100%);background:var(--paper);color:var(--ink);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px -20px rgba(0,0,0,.5)}
+.card h3{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0}
+.hint{margin:0;color:var(--muted);font-size:.85rem;font-weight:700;line-height:1.45}
+.keybox{display:flex;flex-direction:column;gap:6px}
+.keybox label{font-weight:800;font-size:.85rem}
+.keybox input{width:100%;font:inherit;padding:9px 12px;border-radius:12px;border:2px solid var(--rule);background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:space-between}
+.btn{font:inherit;font-weight:800;padding:11px 14px;border-radius:12px;border:2px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer;flex:1;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.row.end .btn{flex:none}
+.btn.link{border:0;background:none;color:var(--muted);text-decoration:underline;padding:8px 0}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.status{margin:0;font-weight:800;min-height:1.3em}
+.status.err{color:var(--accent)}
+.card.busy #scanBtns{opacity:.4;pointer-events:none}
+.chip.mine{border-style:dashed}
+.minebar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:2px 6px 6px;font-size:.78rem;font-weight:800;color:var(--muted)}
+.minebar button{font:inherit;font-weight:800;border:0;background:none;color:var(--accent);cursor:pointer;text-decoration:underline;padding:0}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .msg{font-weight:700;color:var(--muted);margin:0}
 .sheet{background:var(--paper);border-radius:14px;padding:10px 10px 4px;box-shadow:0 1px 0 var(--rule),0 8px 24px -16px rgba(30,35,64,.35)}
@@ -117,6 +140,7 @@ h1 span{color:var(--accent)}
       <form class="search" id="f">
         <input id="q" type="search" placeholder="Zoek liedje…" autocomplete="off" aria-label="Zoek een liedje">
       </form>
+      <button class="fs cam" id="camBtn" type="button" aria-label="Bladmuziek fotograferen" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h3.5l2-3h7l2 3H21v11H3z"/><circle cx="12" cy="13" r="3.6"/></svg></button>
       <button class="fs" id="fs" type="button" aria-label="Volledig scherm">⛶ <span id="fsl" class="fsl">Volledig scherm</span></button>
     </div>
     <div class="chips" id="list"></div>
@@ -124,6 +148,26 @@ h1 span{color:var(--accent)}
     <section class="sheet" id="sheet" aria-live="polite"></section>
   </div>
 </main>
+
+<div class="modal" id="scan" hidden>
+  <div class="card" id="scanCard" role="dialog" aria-modal="true" aria-labelledby="scanT">
+    <h3 id="scanT">Bladmuziek fotograferen</h3>
+    <p class="hint">Maak een foto van één liedje: recht van boven, goed licht, de hele bladzijde in beeld. Claude leest de noten en zet het liedje in de app.</p>
+    <div class="keybox" id="keyBox" hidden>
+      <label for="key">Anthropic API-sleutel</label>
+      <input id="key" type="password" placeholder="sk-ant-…" autocomplete="off">
+      <p class="hint">Eenmalig nodig. Maak er een op console.anthropic.com bij API Keys. Hij blijft alleen op deze tablet. Een foto omzetten kost een paar cent.</p>
+    </div>
+    <div class="row" id="scanBtns">
+      <label class="btn primary" for="cam">Foto maken</label>
+      <label class="btn" for="pick">Kies uit galerij</label>
+    </div>
+    <input id="cam" type="file" accept="image/*" capture="environment" hidden>
+    <input id="pick" type="file" accept="image/*" hidden>
+    <p class="status" id="scanMsg" aria-live="polite"></p>
+    <div class="row end"><button class="btn link" id="keyEdit" type="button">API-sleutel wijzigen</button><button class="btn" id="scanClose" type="button">Sluiten</button></div>
+  </div>
+</div>
 
 <div class="dock wrap" id="dock">
   <div class="inner">
@@ -200,7 +244,7 @@ const norm = s => s.toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g,'').tri
 function renderList(filter=''){
   const f = norm(filter);
   const hits = SONGS.filter(s => !f || norm(s.title).includes(f));
-  $('list').innerHTML = hits.map(s => `<button class="chip" data-id="${s.id}" aria-pressed="${song&&song.id===s.id}">${s.title}</button>`).join('');
+  $('list').innerHTML = hits.map(s => `<button class="chip${s.mine?' mine':''}" data-id="${s.id}" aria-pressed="${song&&song.id===s.id}">${s.title}</button>`).join('');
   const msg = $('msg');
   if (!hits.length){ msg.hidden = false; msg.textContent = `"${filter}" staat nog niet in het boek. Vraag Claude om dit liedje toe te voegen.`; }
   else msg.hidden = true;
@@ -220,12 +264,12 @@ function openSong(id){
 /* ---- Sheet music drawn as SVG ---- */
 const W = 360, TOP = 34, GAP = 10, BOT = TOP + 4*GAP;           // staff lines; bottom line = E4
 const yOf = p => BOT - (diat(p) - diat('E4')) * GAP/2;
-const SIG_Y = {'F#': TOP, 'C#': TOP+15, 'Bb': TOP+20, 'Eb': TOP+5};
+const SIG_POS = {'#': {F:'F5',C:'C5',G:'G5',D:'D5',A:'A4',E:'E5',B:'B4'}, 'b': {B:'B4',E:'E5',A:'A4',D:'D5',G:'G4',C:'C5',F:'F4'}};
 
 function renderSheet(){
   const [num, den] = song.time, unitsPerBar = num * (8/den);
   const sig = song.keySig || [], pick = song.pickup || 0;
-  let html = `<h2>${song.title}</h2><p class="sub">${song.sub} · ${num}/${den}-maat</p><div class="lines">`;
+  let html = `<h2>${song.title}</h2><p class="sub">${song.sub} · ${num}/${den}-maat</p>${song.mine ? '<div class="minebar"><span>Gemaakt van een foto. Klopt er iets niet? Stuur de foto naar Claude.</span><button id="del" type="button">Verwijderen</button></div>' : ''}<div class="lines">`;
   const lowY = Math.max(BOT, ...notes.map(n => yOf(n.p)));
   const hasLyrics = song.lines.some(l => l.some(n => n[2]));
   const BADGE = Math.max(BOT + 30, lowY + 17), LYR = BADGE + 24, H = (hasLyrics ? LYR : BADGE + 4) + 10;
@@ -245,7 +289,7 @@ function renderSheet(){
     s += `<g class="curg"></g>`;
     for (let i=0;i<5;i++) s += `<line x1="4" x2="${end}" y1="${TOP+i*GAP}" y2="${TOP+i*GAP}" stroke="var(--line)" stroke-width="1"/>`;
     s += `<text x="6" y="${BOT+10}" font-family="var(--music)" font-size="58" fill="var(--ink)">𝄞</text>`;
-    sig.forEach((k,i) => s += `<text x="${42+i*10}" y="${SIG_Y[k] + (k[1]==='#'?5:3)}" font-size="17" fill="var(--ink)" text-anchor="middle">${k[1]==='#'?'♯':'♭'}</text>`);
+    sig.forEach((k,i) => s += `<text x="${42+i*10}" y="${yOf(SIG_POS[k[1]][k[0]]) + (k[1]==='#'?5:3)}" font-size="17" fill="var(--ink)" text-anchor="middle">${k[1]==='#'?'♯':'♭'}</text>`);
     if (first){ const tx = 52 + sigW;
       s += `<text x="${tx}" y="${TOP+19}" font-family="var(--display)" font-weight="700" font-size="21" fill="var(--ink)" text-anchor="middle">${num}</text><text x="${tx}" y="${TOP+39}" font-family="var(--display)" font-weight="700" font-size="21" fill="var(--ink)" text-anchor="middle">${den}</text>`; }
     barsAt.forEach((w, bi) => { const last = bi === barsAt.length-1, x = start + w*unit - (last?0:unit*0.35), fin = last && li===song.lines.length-1;
@@ -264,6 +308,7 @@ function renderSheet(){
       s += `<rect x="${x-12}" y="${TOP-22}" width="24" height="${H-TOP+18}" fill="transparent"/>`;
       for (let ly = BOT+GAP; ly <= y+0.1; ly += GAP) s += `<line x1="${x-10}" x2="${x+10}" y1="${ly}" y2="${ly}" stroke="var(--line)" stroke-width="1"/>`;
       for (let ly = TOP-GAP; ly >= y-0.1; ly -= GAP) s += `<line x1="${x-10}" x2="${x+10}" y1="${ly}" y2="${ly}" stroke="var(--line)" stroke-width="1"/>`;
+      if (!P.acc && sig.some(k => k[0] === P.l)) s += `<text x="${x-14}" y="${y+5}" font-size="15" fill="var(--ink)" text-anchor="middle">♮</text>`;
       if (P.acc && !sig.includes(P.l + P.acc)) s += `<text x="${x-14}" y="${y+5}" font-size="15" fill="var(--ink)" text-anchor="middle">${P.acc==='#'?'♯':'♭'}</text>`;
       s += `<ellipse cx="${x}" cy="${y}" rx="6.4" ry="4.6" transform="rotate(-20 ${x} ${y})" fill="${hollow?'var(--paper)':col}" stroke="${col}" stroke-width="${hollow?2.4:1}"/>`;
       if (d < 8){
@@ -331,6 +376,118 @@ function update(){
 }
 $('prev').addEventListener('click', () => { if (cur > 0){ cur--; update(); } });
 $('next').addEventListener('click', () => { if (cur < notes.length-1){ cur++; update(); } });
+
+/* ---- Songs from a photo (installed app only), saved on this device ---- */
+const MY_KEY = 'pianoboek-mysongs';
+function loadMine(){ try { return JSON.parse(localStorage.getItem(MY_KEY) || '[]'); } catch(e){ return []; } }
+function saveMine(){ try { localStorage.setItem(MY_KEY, JSON.stringify(SONGS.filter(s => s.mine))); return true; } catch(e){ return false; } }
+loadMine().forEach(s => { if (s && s.lines) { s.mine = true; SONGS.push(s); } });
+
+const ORDER = {'#':'FCGDAEB', 'b':'BEADGCF'};
+function cleanSong(x){
+  const lines = (x.lines || []).map(l => (Array.isArray(l) ? l : []).map(n => {
+    if (!Array.isArray(n)) return null;
+    let [p, d, ly, f] = n; d = +d; if (!(d > 0)) return null;
+    p = String(p || '').trim().replace('♯','#').replace('♭','b');
+    if (/^r/i.test(p)) return ['r', d];
+    p = p.charAt(0).toUpperCase() + p.slice(1);
+    if (!/^[A-G](#|b)?[2-6]$/.test(p)) return null;
+    return [p, d, ly ? String(ly) : '', (+f >= 1 && +f <= 5) ? +f : 0];
+  }).filter(Boolean)).filter(l => l.some(n => n[0] !== 'r'));
+  if (!lines.length) throw new Error(x.note || 'Ik kon geen noten vinden op deze foto. Probeer een scherpere foto, recht van boven.');
+  const keySig = (x.keySig || []).map(k => String(k).trim().replace('♯','#').replace('♭','b')).map(k => k.charAt(0).toUpperCase() + k.slice(1))
+    .filter(k => /^[A-G](#|b)$/.test(k)).sort((a,b) => ORDER[a[1]].indexOf(a[0]) - ORDER[b[1]].indexOf(b[0]));
+  const t = Array.isArray(x.time) && x.time.length === 2 && x.time.every(v => +v > 0) ? x.time.map(Number) : [4, 4];
+  return { id: 'foto-' + Date.now(), title: String(x.title || 'Mijn liedje').slice(0, 60), sub: 'Van een foto · speel het even na om te checken',
+           time: t, keySig, pickup: +x.pickup > 0 ? +x.pickup : 0, lines, mine: true };
+}
+
+async function toJpeg(file){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Deze foto kan ik niet openen.')); i.src = url; });
+    const sc = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.85).split(',')[1];
+  } finally { URL.revokeObjectURL(url); }
+}
+
+const PROMPT = `This is a photo of piano sheet music for a child learning piano. Transcribe the melody exactly as printed and call save_song.
+- title: the song title as printed (Dutch titles stay Dutch). If none is printed, a short name.
+- time: the time signature as [beats, unit], e.g. [3,4]. Infer it if not printed.
+- keySig: the key signature as pitch classes, e.g. ["F#"] or ["Bb","Eb"]; [] when there is none.
+- pickup: length of an opening upbeat (anacrusis) in eighth notes; 0 if none.
+- lines: one entry per printed system (row of music), in order. Each line is a list of notes. A note is [pitch, length, lyric, finger].
+  pitch: scientific pitch name of the note that actually sounds, after applying the clef, the key signature and any accidentals in the bar. "C4" is middle C. Use "#" and "b", e.g. "F#4", "Bb4". A rest is ["r", length].
+  length in eighth notes: sixteenth 0.5, eighth 1, dotted eighth 1.5, quarter 2, dotted quarter 3, half 4, dotted half 6, whole 8. Tied notes inside one bar become one note with the summed length.
+  lyric: the syllable printed under the note, or "".
+  finger: the fingering number printed at the note (1-5), or 0.
+- Only the melody: the treble / right-hand staff; when it has chords, take the top note. Ignore the bass staff, chord symbols and letters above the staff.
+- Letter names printed under the notes (c d e ...) are a strong hint for the pitch; use them to check yourself.
+- Check that every bar adds up to the time signature (except the pickup and the last bar). Count ledger lines carefully.
+If the photo does not show sheet music, call save_song with lines [] and explain why in Dutch in "note".`;
+const TOOL = { name: 'save_song', description: 'Store the transcribed melody in the app format.',
+  input_schema: { type: 'object', properties: {
+    title: {type: 'string'}, time: {type: 'array', items: {type: 'integer'}}, keySig: {type: 'array', items: {type: 'string'}},
+    pickup: {type: 'number'}, lines: {type: 'array', items: {type: 'array', items: {type: 'array'}}}, note: {type: 'string'} },
+    required: ['title', 'time', 'keySig', 'lines'] } };
+
+async function askClaude(key, b64){
+  let res;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-opus-5-5', max_tokens: 8000, tools: [TOOL], tool_choice: {type: 'tool', name: 'save_song'},
+        messages: [{ role: 'user', content: [ {type: 'image', source: {type: 'base64', media_type: 'image/jpeg', data: b64}}, {type: 'text', text: PROMPT} ] }] }) });
+  } catch(e) { throw new Error('Kon Claude niet bereiken. Check of de tablet internet heeft.'); }
+  if (!res.ok) {
+    let m = ''; try { m = (await res.json()).error.message; } catch(e) {}
+    const err = new Error(res.status === 401 ? 'De API-sleutel klopt niet. Vul hem opnieuw in.'
+      : (res.status === 429 || res.status === 529) ? 'Claude is even druk. Probeer het over een minuut opnieuw.'
+      : res.status === 400 && /credit/i.test(m) ? 'Je API-tegoed is op. Waardeer op bij console.anthropic.com.'
+      : `Er ging iets mis (${res.status}). ${m}`);
+    err.status = res.status; throw err;
+  }
+  const data = await res.json(), use = (data.content || []).find(c => c.type === 'tool_use');
+  if (!use) throw new Error('Claude gaf geen noten terug. Probeer het nog eens.');
+  return use.input;
+}
+
+const scanMsg = (t, err) => { const m = $('scanMsg'); m.textContent = t; m.classList.toggle('err', !!err); };
+const showKey = on => { $('keyBox').hidden = !on; if (on) $('key').focus(); };
+function openScan(){ $('scan').hidden = false; scanMsg(''); showKey(!store.get('pianoboek-key')); }
+function closeScan(){ if (!$('scanCard').classList.contains('busy')) $('scan').hidden = true; }
+$('camBtn').addEventListener('click', openScan);
+$('scanClose').addEventListener('click', closeScan);
+$('scan').addEventListener('click', e => { if (e.target === $('scan')) closeScan(); });
+$('keyEdit').addEventListener('click', () => { $('key').value = ''; showKey(true); });
+async function onPhoto(e){
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  const typed = $('key').value.trim(); if (typed) { store.set('pianoboek-key', typed); $('key').value = ''; showKey(false); }
+  const key = store.get('pianoboek-key');
+  if (!key) { showKey(true); scanMsg('Vul eerst je API-sleutel in.', true); return; }
+  if (!navigator.onLine) { scanMsg('Geen internet. Foto omzetten werkt alleen online.', true); return; }
+  const card = $('scanCard'); card.classList.add('busy'); scanMsg('Noten lezen… dit duurt ongeveer een halve minuut.');
+  try {
+    const s = cleanSong(await askClaude(key, await toJpeg(f)));
+    SONGS.push(s);
+    if (!saveMine()) { SONGS.pop(); throw new Error('Opslaan op de tablet lukte niet.'); }
+    card.classList.remove('busy'); scanMsg(''); $('scan').hidden = true;
+    $('q').value = ''; openSong(s.id);
+  } catch(err) {
+    scanMsg(err.message || 'Er ging iets mis.', true);
+    if (err.status === 401) { store.set('pianoboek-key', ''); showKey(true); }
+  } finally { card.classList.remove('busy'); }
+}
+$('cam').addEventListener('change', onPhoto);
+$('pick').addEventListener('change', onPhoto);
+$('sheet').addEventListener('click', e => {
+  const b = e.target.closest('#del'); if (!b) return;
+  if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Zeker weten? Tik nog eens'; return; }
+  const i = SONGS.indexOf(song); if (i >= 0) SONGS.splice(i, 1); saveMine(); openSong(SONGS[0].id);
+});
+if (window.APP_BUILD) $('camBtn').hidden = false;
 
 /* ---- Fold the piano away ---- */
 function setMini(on){ $('dock').classList.toggle('mini', on); store.set('pianoboek-mini', on ? '1' : ''); }
